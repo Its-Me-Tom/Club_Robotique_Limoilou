@@ -102,6 +102,22 @@ using Note       = PatternItem<pitch_t>;
 using Tune       = Pattern<pitch_t>;
 using SimpleTune = SimplePattern<pitch_t>;
 
+const Note TUNE_HIGH_TONE[] = {
+    {20, NOTE_B7}, {20, NOTE_C7}, {20, NOTE_SILENCE}, Note::END
+};
+
+const Note TUNE_LOW_TONE[] = {
+    {20, NOTE_B5}, {20, NOTE_C5}, {20, NOTE_SILENCE}, Note::END
+};
+
+const Note TUNE_BIZZ[] = {
+    { 20, NOTE_G4 }, { 20, NOTE_A4 }, { 20, NOTE_B4 }, { 20, NOTE_C5 },
+    { 20, NOTE_D5 }, { 20, NOTE_E5 }, { 20, NOTE_F5 }, { 20, NOTE_G5 },
+    { 20, NOTE_F5 }, { 20, NOTE_E5 }, { 20, NOTE_D5 }, { 20, NOTE_C5 },
+    { 20, NOTE_B4 }, { 20, NOTE_A4 }, { 20, NOTE_G4 }, { 20, NOTE_SILENCE },
+    Note::END
+};
+
 const Note TUNE_TEST[] = { { 250, 110 }, { 250, 220 }, { 125, NOTE_SILENCE },
     { 125, 392 }, { 125, NOTE_SILENCE }, { 125, 294 }, { 2000, NOTE_SILENCE },
     Note::END };
@@ -129,6 +145,21 @@ const Note TUNE_VALUE_ERROR[] = { { 150, NOTE_D3 }, { 150, NOTE_D4 },
 const Note TUNE_SERVO_ERROR[] = { { 100, NOTE_D4 }, { 50, NOTE_SILENCE },
     { 150, NOTE_D4 }, { 150, NOTE_D3 }, { 150, NOTE_A3 },
     { 2000, NOTE_SILENCE }, Note::END };
+
+    const Note TUNE_STARTUP[] = {
+    { 100, NOTE_C4 }, { 100, NOTE_E4 }, { 100, NOTE_G4 }, { 100, NOTE_C5 },
+    { 100, NOTE_G4 }, { 100, NOTE_E4 }, { 100, NOTE_C4 }, { 2000, NOTE_SILENCE },
+    Note::END
+};
+
+    const Note TUNE_JAVIER[] = {
+        { 260, NOTE_C4 },   // DO (261.63 Hz) for 260ms
+        { 260, NOTE_D4 },   // RÉ (293.66 Hz) for 260ms
+        { 280, NOTE_E4 },   // MI (329.63 Hz) for 280ms
+        { 280, NOTE_D4 },   // RÉ (293.66 Hz) for 280ms
+        { 1020, NOTE_C4 },  // DO (261.63 Hz) for 1020ms
+        Note::END           // End of tune
+    };
 
 class CrcBuzz {
 public:

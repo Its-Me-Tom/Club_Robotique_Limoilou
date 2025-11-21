@@ -7,11 +7,14 @@
 
 void initManette();
 void readManette();
-void verifieCommandeElevateurAuto();
-void verifieCommandeElevateurManuel();
 void verifieCommandeDriveJoy();
 void verifieCommandeDriveDPad();
+void verifieCommandePince();
+void verifieCommandeElevateur();
+void verifieCommandeFlippeux();
 void verifieCommandeLanceur();
+
+#include "main.h"
 
 struct manette_s {
     bool a, b, x, y, up, down, left, right, select, start, l1, r1, l2, r2, xbox;

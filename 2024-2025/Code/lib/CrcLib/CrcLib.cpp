@@ -278,7 +278,8 @@ void CrcLib::Initialize(bool buzzer)
     // Start metro tune/pattern
     ShowColorPattern(CrcUtility::PATTERN_STARTUP, false);
     if (buzzer)
-        PlayTune(CrcUtility::TUNE_METRO, false);
+        PlayTune(CrcUtility::TUNE_STARTUP, false);
+        //PlayTune(CrcUtility::TUNE_METRO, false);
 }
 
 void CrcLib::SetupPins()
