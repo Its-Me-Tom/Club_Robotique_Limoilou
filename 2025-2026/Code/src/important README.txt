@@ -1,8 +1,8 @@
 À faire:
 - stoper le robot lorsque la manette déconnecte
-
-
-
+- fix gauce droite
+- smoother movments
+-
 
 
 Drive
