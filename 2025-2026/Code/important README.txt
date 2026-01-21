@@ -1,8 +1,8 @@
 À faire:
-- stoper le robot lorsque la manette déconnecte
-- fix gauce droite
-- smoother movments
--
+- i think when in rocket league mode the left write 
+  should invert when going backwards.
+- 
+- 
 
 
 Drive
