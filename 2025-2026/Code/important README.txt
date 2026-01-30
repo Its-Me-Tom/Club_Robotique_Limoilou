@@ -1,7 +1,5 @@
 À faire:
-- i think when in rocket league mode the left write 
-  should invert when going backwards.
-- 
+- when in non rocket league mode dont invert left and right when going backwards
 - 
 
 

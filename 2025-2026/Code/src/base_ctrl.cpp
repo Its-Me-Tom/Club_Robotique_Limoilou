@@ -1,0 +1,103 @@
+//==============================================================================
+// BASE_CTRL.CPP - Robot Base/Drive Control
+//==============================================================================
+// Handles robot base movement control (joystick, DPad, Rocket League mode)
+// Includes steering inversion when reversing in Rocket League mode
+//==============================================================================
+
+#include "main.h"
+#include "manette.h"
+
+// ===== MODE DE CONTRÔLE =====
+// true = Mode Rocket League (triggers pour avant/arrière, joystick X pour steering)
+// false = Mode Joystick classique (joystick contrôle tout)
+const bool ROCKET_LEAGUE_MODE = true;
+// ============================
+
+// Vérifier la position du joystick gauche et appliquer la valeur correspondante à driveSpeed
+void verifieCommandeDriveJoy() {
+    // Calcul du steering X (identique dans les deux modes)
+    if (abs(manette.leftJoystick.x) > 10) {
+        int8_t steering;
+        if (manette.leftJoystick.x == -128) {
+            steering = -126; // 100% de la vitesse (et ajoute -1)
+        } else if (manette.leftJoystick.x == 127) {
+            steering = 125; // 100% de la vitesse
+        } else {
+            steering = (manette.leftJoystick.x); // 75%
+        }
+        
+        // Crawl mode: 25% du steering
+        if (manette.l3) {
+            driveSpeed.x = steering / 3; // 75% / 3 = 25%
+        } else {
+            driveSpeed.x = steering;
+        }
+    } else {
+        driveSpeed.x = 0;
+    }
+    
+    // Calcul de l'avant/arrière Y (DIFFÉRENT selon le mode)
+    int8_t forward_back = 0;
+    
+    if (ROCKET_LEAGUE_MODE) {
+        // MODE ROCKET LEAGUE: Utiliser les triggers pour Y
+        if (manette.rightTrigger > -118) {
+            forward_back = (int8_t)map(manette.rightTrigger, -128, 127, 0, 127);
+        } else if (manette.leftTrigger > -118) {
+            forward_back = -(int8_t)map(manette.leftTrigger, -128, 127, 0, 127);
+            
+            // INVERSER le steering quand on recule
+            driveSpeed.x = -driveSpeed.x;
+        }
+    } else {
+        // MODE NORMAL: Utiliser le joystick Y
+        if (abs(manette.leftJoystick.y) > 10) {
+            if (manette.leftJoystick.y == -128) {
+                forward_back = 127;
+            } else if (manette.leftJoystick.y == 127) {
+                forward_back = -128;
+            } else {
+                forward_back = -manette.leftJoystick.y;
+            }
+        }
+    }
+    
+    // Crawl mode pour Y (identique dans les deux modes)
+    if (manette.l3) {
+        driveSpeed.y = forward_back / 5; // Ça prend plus de jus pour tourner
+    } else {
+        driveSpeed.y = forward_back;
+    }
+}
+
+// Contrôle numérique du DPad - fonctionne comme un joystick analogique
+void verifieCommandeDriveDPad() {
+    // Vitesse de base pour chaque direction du DPad
+    const int8_t DPAD_BASE_SPEED = 50;
+    
+    int8_t dpad_x = 0;
+    int8_t dpad_y = 0;
+    
+    // Calculer la composante X
+    if (manette.right) {
+        dpad_x += DPAD_BASE_SPEED;
+    }
+    if (manette.left) {
+        dpad_x -= DPAD_BASE_SPEED;
+    }
+    
+    // Calculer la composante Y
+    if (manette.up) {
+        dpad_y += DPAD_BASE_SPEED;
+    }
+    if (manette.down) {
+        dpad_y -= DPAD_BASE_SPEED;
+    }
+    
+    // Appliquer seulement si au moins un bouton est pressé
+    if (manette.up || manette.down || manette.left || manette.right) {
+        driveSpeed.x = dpad_x;
+        driveSpeed.y = dpad_y;
+    }
+}
