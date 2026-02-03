@@ -17,8 +17,8 @@ const bool ROCKET_LEAGUE_MODE = true;
 // Vérifier la position du joystick gauche et appliquer la valeur correspondante à driveSpeed
 void verifieCommandeDriveJoy() {
     // Calcul du steering X (identique dans les deux modes)
+    int8_t steering = 0;
     if (abs(manette.leftJoystick.x) > 10) {
-        int8_t steering;
         if (manette.leftJoystick.x == -128) {
             steering = -126; // 100% de la vitesse (et ajoute -1)
         } else if (manette.leftJoystick.x == 127) {
@@ -26,19 +26,11 @@ void verifieCommandeDriveJoy() {
         } else {
             steering = (manette.leftJoystick.x); // 75%
         }
-        
-        // Crawl mode: 25% du steering
-        if (manette.l3) {
-            driveSpeed.x = steering / 3; // 75% / 3 = 25%
-        } else {
-            driveSpeed.x = steering;
-        }
-    } else {
-        driveSpeed.x = 0;
     }
     
     // Calcul de l'avant/arrière Y (DIFFÉRENT selon le mode)
     int8_t forward_back = 0;
+    bool reversing = false;
     
     if (ROCKET_LEAGUE_MODE) {
         // MODE ROCKET LEAGUE: Utiliser les triggers pour Y
@@ -46,9 +38,7 @@ void verifieCommandeDriveJoy() {
             forward_back = (int8_t)map(manette.rightTrigger, -128, 127, 0, 127);
         } else if (manette.leftTrigger > -118) {
             forward_back = -(int8_t)map(manette.leftTrigger, -128, 127, 0, 127);
-            
-            // INVERSER le steering quand on recule
-            driveSpeed.x = -driveSpeed.x;
+            reversing = true;
         }
     } else {
         // MODE NORMAL: Utiliser le joystick Y
@@ -63,10 +53,17 @@ void verifieCommandeDriveJoy() {
         }
     }
     
-    // Crawl mode pour Y (identique dans les deux modes)
+    // INVERSER le steering quand on recule
+    if (reversing) {
+        steering = -steering;
+    }
+    
+    // Crawl mode pour X et Y (identique dans les deux modes)
     if (manette.l3) {
+        driveSpeed.x = steering / 3; // 75% / 3 = 25%
         driveSpeed.y = forward_back / 5; // Ça prend plus de jus pour tourner
     } else {
+        driveSpeed.x = steering;
         driveSpeed.y = forward_back;
     }
 }
