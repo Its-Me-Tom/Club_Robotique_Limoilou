@@ -1,14 +1,11 @@
 //==============================================================================
 // MANETTE.CPP - Controller Input Reading
 //==============================================================================
-// Handles reading all controller inputs (buttons, joysticks, triggers)
-// Created by clovis on 3/19/24.
-//==============================================================================
 
 #include "main.h"
 #include "manette.h"
 
-// Initialize all controller inputs to default values (do not touch)
+//======================== INITIALIZE CONTROLLER ===============================
 void initManette() {
     manette.a = false;
     manette.b = false;
@@ -34,28 +31,41 @@ void initManette() {
     manette.rightTrigger = 0;
 }
 
+//======================== READ CONTROLLER INPUTS ==============================
 // Mettre en commentaire les boutons non utilisés pour économiser des ressources.
 void readManette() {
-    manette.a = CrcLib::ReadDigitalChannel(BUTTON::COLORS_DOWN);
-    //manette.b = CrcLib::ReadDigitalChannel(BUTTON::COLORS_RIGHT);
-    //manette.x = CrcLib::ReadDigitalChannel(BUTTON::COLORS_LEFT);
-    //manette.y = CrcLib::ReadDigitalChannel(BUTTON::COLORS_UP);
+    // Face buttons
+    manette.a = CrcLib::ReadDigitalChannel(BUTTON::COLORS_DOWN);   // launcher
+    manette.b = CrcLib::ReadDigitalChannel(BUTTON::COLORS_RIGHT);  // grabber toggle
+    manette.x = CrcLib::ReadDigitalChannel(BUTTON::COLORS_LEFT);   // arm middle
+    manette.y = CrcLib::ReadDigitalChannel(BUTTON::COLORS_UP);     // arm top
+    
+    // DPad
     manette.up = CrcLib::ReadDigitalChannel(BUTTON::ARROW_UP);
     manette.down = CrcLib::ReadDigitalChannel(BUTTON::ARROW_DOWN);
     manette.left = CrcLib::ReadDigitalChannel(BUTTON::ARROW_LEFT);
     manette.right = CrcLib::ReadDigitalChannel(BUTTON::ARROW_RIGHT);
+    
+    // Bumpers
+    manette.l1 = CrcLib::ReadDigitalChannel(BUTTON::L1);  // elevator up
+    manette.r1 = CrcLib::ReadDigitalChannel(BUTTON::R1);  // elevator down
+    
+    // Joystick clicks
+    manette.l3 = CrcLib::ReadDigitalChannel(BUTTON::HATL);  // crawl mode
+    //manette.r3 = CrcLib::ReadDigitalChannel(BUTTON::HATR);
+    
+    // Menu buttons (mettre en commentaire si non utilisés)
     //manette.select = CrcLib::ReadDigitalChannel(BUTTON::SELECT);
     //manette.start = CrcLib::ReadDigitalChannel(BUTTON::START);
-    manette.l1 = CrcLib::ReadDigitalChannel(BUTTON::L1);     // descend elevateur 
-    manette.r1 = CrcLib::ReadDigitalChannel(BUTTON::R1);     // monte elevateur
-    //manette.l2 = CrcLib::ReadDigitalChannel(BUTTON::HATL); // limit SWITCH du bas 
-    //manette.r2 = CrcLib::ReadDigitalChannel(BUTTON::HATR); // limit SWITCH du haut 
-    manette.l3 = CrcLib::ReadDigitalChannel(BUTTON::HATL);    // HATL = left joystick click
     //manette.xbox = CrcLib::ReadDigitalChannel(BUTTON::LOGO);
+    
+    // Joysticks (pour le contrôle de la base)
     manette.leftJoystick.x = CrcLib::ReadAnalogChannel(ANALOG::JOYSTICK1_X);
     manette.leftJoystick.y = CrcLib::ReadAnalogChannel(ANALOG::JOYSTICK1_Y);
     manette.rightJoystick.x = CrcLib::ReadAnalogChannel(ANALOG::JOYSTICK2_X);
     manette.rightJoystick.y = CrcLib::ReadAnalogChannel(ANALOG::JOYSTICK2_Y);
-    manette.leftTrigger = CrcLib::ReadAnalogChannel(ANALOG::GACHETTE_L);      // Recule le robot  
-    manette.rightTrigger = CrcLib::ReadAnalogChannel(ANALOG::GACHETTE_R);     // Avance le robot
+    
+    // Triggers (pour avancer/reculer en mode Rocket League)
+    manette.leftTrigger = CrcLib::ReadAnalogChannel(ANALOG::GACHETTE_L);   // recule
+    manette.rightTrigger = CrcLib::ReadAnalogChannel(ANALOG::GACHETTE_R);  // avance
 }
