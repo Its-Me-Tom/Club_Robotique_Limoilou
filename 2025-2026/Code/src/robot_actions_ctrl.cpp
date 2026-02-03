@@ -1,139 +1,94 @@
 //==============================================================================
 // ROBOT_ACTIONS_CTRL.CPP - Robot Actions Control
 //==============================================================================
-// Handles robot-specific actions (elevator, launcher, etc.)
-// Includes elevator state machine and manual controls
-//==============================================================================
 
 #include "main.h"
 #include "manette.h"
 #include "robot_actions_ctrl.h"
 
-#define AIMANT_PIN CRC_DIG_1
 
-// Forward declarations for all elevator functions
-void initElevateur();
-void initMonteElevateur();
-void monteElevateur();
-void initDescendElevateur();
-void descendElevateur();
-void bougePasElevateur();
+//===================== BUTTON MAPPINGS =======================//
+// controller button mappings
+#define BTN_ELEVATOR_UP manette.l1      // L1 bumper - move elevator up
+#define BTN_ELEVATOR_DOWN manette.r1    // R1 bumper - move elevator down
+#define BTN_LAUNCHER manette.a          // A button - launcher on/off
+#define BTN_GRABBER_TOGGLE manette.b    // B button - toggle grabbers open/close
+#define BTN_ARM_TOP manette.y           // Y button - arm to top position
+#define BTN_ARM_MIDDLE manette.x        // X button - arm to middle position
 
-// External variables from main.cpp
-extern int8_t elevateurDirectionCommandee;
-extern int8_t lanceurSpeed;
+// Limit switch pins (LS = Limit Switch)
+// elevator
+#define LS_BOTTOM CRC_DIG_1   // Bottom elevaor      (pin 1)
+#define LS_TOP    CRC_DIG_2   // Top elevator        (pin 2)
+// arm pos
+#define LS_TOP    CRC_DIG_2   // Top arm position    (pin 3)
+#define LS_MIDDLE CRC_DIG_3   // Middle arm position (pin 4)
+#define LS_BOTTOM CRC_DIG_1   // Bottom arm position (pin 5)
+// grabbers
+#define LS_OPEN   CRC_DIG_4   // Grabbers fully open (pin 6)
 
-// Elevator state machine function pointer
-void (*actionElevateur)() = initElevateur;
 
-// Elevator variables
-int8_t elevateurSpeed = 0;
-bool aimantAligne = false;
-
-//==============================================================================
-// ELEVATOR STATE MACHINE
-//==============================================================================
+//=================== ELEVATOR STATE MACHINE ==================//
+void (*actionElevateur)() = initElevateur;  // current state
+int8_t elevateurSpeed = 0;                  // motor speed -127 to 127
+bool aimantAligne = false;                  // limit switch status
 
 void initElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(AIMANT_PIN);
-    if (!aimantAligne) {
-        elevateurSpeed = 50;
-    } else {
-        elevateurSpeed = 0;
-        //elevateurDirectionCommandee = 0;
-        actionElevateur = bougePasElevateur;
-    }
-}
-
-void initMonteElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(AIMANT_PIN);
-    elevateurSpeed = 50;
-    if (!aimantAligne) {
-        actionElevateur = monteElevateur;
-    }
-}
-
-void monteElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(AIMANT_PIN);
+    aimantAligne = !CrcLib::GetDigitalInput(LS_BOTTOM);
+    
     if (aimantAligne) {
         elevateurSpeed = 0;
-        elevateurDirectionCommandee = 0;
         actionElevateur = bougePasElevateur;
     } else {
-        elevateurSpeed = 50;
-    }
-}
-
-
-void initDescendElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(AIMANT_PIN);
-    elevateurSpeed = -50;
-    if (!aimantAligne) {
+        elevateurSpeed = -50;  // go down to find bottom limit
         actionElevateur = descendElevateur;
     }
 }
 
-void descendElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(AIMANT_PIN);
-    if (aimantAligne) {
+void bougePasElevateur() {
+    elevateurSpeed = 0;  // motor off
+    
+    if (BTN_ELEVATOR_UP) {
+        actionElevateur = monteElevateur;
+    } else if (BTN_ELEVATOR_DOWN) {
+        actionElevateur = descendElevateur;
+    }
+}
+
+void monteElevateur() {
+    if (!BTN_ELEVATOR_UP) {  // button released
         elevateurSpeed = 0;
-        elevateurDirectionCommandee = 0;
         actionElevateur = bougePasElevateur;
     } else {
-        elevateurSpeed = -50;
+        elevateurSpeed = 50;  // move up
     }
 }
 
-
-// quand on pese le boutton, le moteur vas donner une petite 
-// puissance pour contrer la gravité pour pas quelle redescend.
-void bougePasElevateur() {
-    // Debug print removed to avoid blocking the main loop and
-    // introducing latency when updating motor outputs.
-    // Serial.write("b\n");
-    aimantAligne = !CrcLib::GetDigitalInput(AIMANT_PIN);
-    elevateurSpeed = 0;
-    if (elevateurDirectionCommandee == 1) {
-        actionElevateur = initMonteElevateur;
-    } else if (elevateurDirectionCommandee == -1) {
-        actionElevateur = initDescendElevateur;
-    }
-}
-
-//==============================================================================
-// ELEVATOR COMMAND FUNCTIONS
-//==============================================================================
-
-// La variable elevateurDirectionCommandee va gentiment demander à la machine à états de monter,
-// descendre ou ne pas bouger. C'est la machine à états qui décidera quoi faire de cette demande.
-void verifieCommandeElevateurAuto() {
-    if (manette.l1 && manette.l2) {         // l2 C La limit SWITCH du bas 
-        elevateurDirectionCommandee = 0;    // (si l1 et limit switch en bas est persé fais rien)
-    } else if (manette.l1) {
-        elevateurDirectionCommandee = 1;
-    } else if (manette.r1) {
-        elevateurDirectionCommandee = -1;
-    }
-}
-
-// Contrôle manuel de l'élévateur. Peut être utile pour faire des tests ou en cas de problème.
-void verifieCommandeElevateurManuel() {
-    // Les gâchettes sont = -128 lorsqu'elles ne sont pas appuyés et 127 lorsqu'elles sont 100% enfonçées
-    if (manette.leftTrigger > -118 && manette.rightTrigger < -118) {
-        elevateurSpeed = (int8_t)map(manette.leftTrigger, -128, 127, 0, -30);
-    } else if (manette.rightTrigger > -118 && manette.leftTrigger < -118) {
-        elevateurSpeed = (int8_t)map(manette.rightTrigger, -128, 127, 0, 30);
-    }
-}
-
-//==============================================================================
-// LAUNCHER COMMAND FUNCTIONS
-//==============================================================================
-
-void verifieCommandeLanceur() {
-    if (manette.x) {
-        lanceurSpeed = 127;
+void descendElevateur() {
+    aimantAligne = !CrcLib::GetDigitalInput(LS_BOTTOM);
+    
+    if (aimantAligne) {  // hit bottom limit
+        elevateurSpeed = 0;
+        actionElevateur = bougePasElevateur;
+    } else if (!BTN_ELEVATOR_DOWN) {  // button released
+        elevateurSpeed = 0;
+        actionElevateur = bougePasElevateur;
     } else {
-        lanceurSpeed = 0;
+        elevateurSpeed = -50;  // move down
     }
 }
+
+
+//===================== GRABBERS ====================//
+// literrylly open a closes with one or 2 limit switch
+// will be toggled with B button
+
+
+//===================== ARM ROTATION ====================//
+// there is 3 modes mapped on 3 buttons:
+// Y for the arm to go to the top position
+// X for the arm to go to the middle position
+// A for the arm to go to the bottom position
+
+// note: for now only 2 limit switches are used (top and bottom)
+// and a magnet sencor thigy for the middle position
