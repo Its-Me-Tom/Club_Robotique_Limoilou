@@ -12,6 +12,7 @@
 #include "manette.h"
 #include "base_ctrl.h"
 #include "robot_actions_ctrl.h"
+#include <encoder.h>
 
 #define ELEVATEUR_MOTOR CRC_PWM_1
 #define DRIVE_MOTOR_R CRC_PWM_2
