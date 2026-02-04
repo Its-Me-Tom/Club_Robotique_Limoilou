@@ -4,29 +4,32 @@
 #include "main.h"
 #include "manette.h"
 #include "robot_actions_ctrl.h"
+#include "encoder.h"
 
 //===================== BUTTON MAPPINGS =======================//
 // controller button mappings
 #define BTN_ELEVATOR_UP manette.l1      // L1 bumper - move elevator up
 #define BTN_ELEVATOR_DOWN manette.r1    // R1 bumper - move elevator down
-#define BTN_LAUNCHER manette.a          // A button - launcher on/off
 #define BTN_GRABBER_TOGGLE manette.b    // B button - toggle grabbers open/close
 #define BTN_ARM_TOP manette.y           // Y button - arm to top position
 #define BTN_ARM_MIDDLE manette.x        // X button - arm to middle position
+#define BTN_ARM_BOTTOM manette.a        // A button - arm to bottom position
 
 // Limit switch pins (LS = Limit Switch)
 // elevator
-#define LS_ELEVATOR_BOTTOM CRC_DIG_1    // Bottom elevator    (pin 22)
-#define LS_ELEVATOR_TOP CRC_DIG_2       // Top elevator       (pin 23)
+#define LS_ELEVATOR_BOTTOM CRC_DIG_1    // Bottom elevator     (pin 1)
+#define LS_ELEVATOR_TOP CRC_DIG_2       // Top elevator        (pin 2)
 // arm pos
-#define LS_ARM_TOP CRC_DIG_2            // Top arm position    (pin 23)
-#define LS_ARM_MIDDLE CRC_DIG_3         // Middle arm position (pin 24)
-#define LS_ARM_BOTTOM CRC_DIG_1         // Bottom arm position (pin 22)
-#define UP 0
+#define LS_ARM_TOP CRC_DIG_3            // Top arm position    (pin 3)
+#define LS_ARM_MIDDLE CRC_DIG_4         // Middle arm position (pin 4)
+#define LS_ARM_BOTTOM CRC_DIG_5         // Bottom arm position (pin 5)
+#define TOP 0
 #define HALFWAY 1
-#define DOWN 2
+#define BOTTOM 2
 // grabbers
-#define LS_GRABBER_OPEN CRC_DIG_4       // Grabbers fully open (pin 25)
+#define GRABBER_FULLY_OPEN_POSITION (-250)  // Encoder value when fully open
+#define LS_GRABBER_OPEN CRC_DIG_6       // Grabbers open       (pin 6)
+#define LS_GRABBER_CLOSED CRC_DIG_7     // Grabbers closed     (pin 7)
 #define OPEN 1
 #define CLOSED 0
 
@@ -37,16 +40,20 @@ int8_t elevateurSpeed = 0;
 bool topLimit = false;
 bool bottomLimit = false;
 // grabbers
+int32_t encoderPos = 0;
 int8_t grabberSpeed;
 bool openLimit = false;
 bool closedLimit = false;
 int LastGrabberState = OPEN;
-// arm rotation
+bool prevGrabberBtn = false;
+bool currentBtn = false;
+// arm
 int8_t armSpeed = 0;
 bool upwards = false;
 bool halfways = false;
 bool downwards = false;
-int LastarmtState = DOWN;
+int TargetArmState = BOTTOM;
+int LastArmState = BOTTOM;
 
 
 //===================== FUNCTION POINTERS =======================//
@@ -88,41 +95,47 @@ void controlElevateur() {
 
 
 //===================== GRABBERS ====================//
-// literrylly open/closes with button B and one or 2 limit switch 
+// open/closes with button B, uses one limit switch + encoder
 void initGrabber() {
-    openLimit = CrcLib::GetDigitalInput(LS_GRABBER_OPEN);
-    //closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
+    closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
     
-    if (!openLimit) {
-        // open grabbers until open limit is reached
-        grabberSpeed = 50;
+    if (!closedLimit) {
+        // close grabbers until closed limit is reached
+        grabberSpeed = -50;
     } else {
+        // at closed position - reset encoder
         grabberSpeed = 0;
+        initEncoder();  // Reset encoder to 0 at closed position
         actionGrabber = controlGrabber;
     }
 }
 
 void controlGrabber() {
-    openLimit = CrcLib::GetDigitalInput(LS_GRABBER_OPEN);
-    //closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
-    grabberSpeed = 50; 
-
-    if (BTN_GRABBER_TOGGLE) {
-        if (LastState == OPEN) {
-            // close grabbers
-            grabberSpeed = -50;
-            // fix for knowing when to stop the grabbers
-            // we don't have a closed limit switch
-            
-        }
+    closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
+    encoderPos = readEncoder();  // Get current position
+    
+    // Button debouncing
+    currentBtn = BTN_GRABBER_TOGGLE;
+    if (currentBtn && !prevGrabberBtn) {
+        // Toggle state
+        LastGrabberState = (LastGrabberState == OPEN) ? CLOSED : OPEN;
+    }
+    prevGrabberBtn = currentBtn;
+    
+    // Control based on state
+    if (LastGrabberState == CLOSED) {
+        // Closing
+        if (!closedLimit) {
+            grabberSpeed = -50;} 
         else {
-            // open grabbers
-            if (!openLimit) {
-                grabberSpeed = 50;
-            } else {
-                grabberSpeed = 0;
-                LastGrabberState = OPEN;
-            }
+            grabberSpeed = 0;
+        }
+    } else {
+        // Opening
+        if (encoderPos > GRABBER_FULLY_OPEN_POSITION) {
+            grabberSpeed = 50;} 
+        else {
+            grabberSpeed = 0;
         }
     }
 }
@@ -150,18 +163,40 @@ void controlArm() {
     halfways = CrcLib::GetDigitalInput(LS_ARM_MIDDLE);
     downwards = CrcLib::GetDigitalInput(LS_ARM_BOTTOM);
     
+    // check for button presses to set target arm state
     if (BTN_ARM_TOP) {
-        // move arm down until bottom limit is reached
-        armSpeed = -50;
-    } else if (BTN_ARM_MIDDLE) {
-        // move arm up until middle limit is reached
-        armSpeed = 50;
-    } else if (BTN_ARM_BOTTOM) {
-        if (!downwards) {
-            armSpeed = -50;
-        } else {
-            armSpeed = 0;
-        }
-    } else {
+        TargetArmState = TOP;
+    }
+    else if (BTN_ARM_MIDDLE) {
+        TargetArmState = HALFWAY;
+    }
+    else if (BTN_ARM_BOTTOM) {
+        TargetArmState = BOTTOM;
+    }
+    
+    // determine current arm port and move accordingly
+    armSpeed = 0;
+    switch (TargetArmState) {
+        // move to top position
+        case TOP:
+            if (!upwards) {
+                armSpeed = 50;}
+            else {
+                LastArmState = TOP;}
+        break;
+        // move to middle position
+        case HALFWAY:
+            if (!halfways) {
+                armSpeed = (LastArmState == TOP) ? -50 : 50;}
+            else {
+                LastArmState = HALFWAY;}
+        break;
+        // move to bottom position
+        case BOTTOM:
+            if (!downwards) {
+                armSpeed = -50;}
+            else {
+                LastArmState = BOTTOM;}
+        break;
     }
 }
