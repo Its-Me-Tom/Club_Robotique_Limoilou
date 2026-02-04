@@ -12,7 +12,6 @@
 // true = Mode Rocket League (triggers pour avant/arrière, joystick X pour steering)
 // false = Mode Joystick classique (joystick contrôle tout)
 const bool ROCKET_LEAGUE_MODE = true;
-// ============================
 
 // Vérifier la position du joystick gauche et appliquer la valeur correspondante à driveSpeed
 void verifieCommandeDriveJoy() {
@@ -20,11 +19,11 @@ void verifieCommandeDriveJoy() {
     int8_t steering = 0;
     if (abs(manette.leftJoystick.x) > 10) {
         if (manette.leftJoystick.x == -128) {
-            steering = -126; // 100% de la vitesse (et ajoute -1)
+            steering = -126;
         } else if (manette.leftJoystick.x == 127) {
-            steering = 125; // 100% de la vitesse
+            steering = 125;
         } else {
-            steering = (manette.leftJoystick.x); // 75%
+            steering = (manette.leftJoystick.x);
         }
     }
     
@@ -53,6 +52,11 @@ void verifieCommandeDriveJoy() {
         }
     }
     
+    // REDUCE forward speed when turning to allow better turning
+    if (abs(steering) > 30 && abs(forward_back) > 20) {
+        forward_back = forward_back * 2 / 3;  // reduce to 66% when turning
+    }
+    
     // INVERSER le steering quand on recule
     if (reversing) {
         steering = -steering;
@@ -60,8 +64,8 @@ void verifieCommandeDriveJoy() {
     
     // Crawl mode pour X et Y (identique dans les deux modes)
     if (manette.l3) {
-        driveSpeed.x = steering / 3; // 75% / 3 = 25%
-        driveSpeed.y = forward_back / 5; // Ça prend plus de jus pour tourner
+        driveSpeed.x = steering / 3;
+        driveSpeed.y = forward_back / 5;
     } else {
         driveSpeed.x = steering;
         driveSpeed.y = forward_back;

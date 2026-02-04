@@ -30,7 +30,6 @@ void updateMoteurs();
 
 coords driveSpeed;
 manette_s manette;
-int8_t elevateurSpeed = 0;
 int8_t lanceurSpeed = 0;
 int8_t grabberSpeed = 0;
 int8_t armSpeed = 0;
@@ -39,7 +38,6 @@ void setup() {
     Serial.begin(9600);
     initManette();
     CrcLib::Initialize();
-    // Initialize motors
     CrcLib::InitializePwmOutput(ELEVATEUR_MOTOR);
     CrcLib::InitializePwmOutput(DRIVE_MOTOR_L);
     CrcLib::InitializePwmOutput(DRIVE_MOTOR_R);
@@ -81,9 +79,9 @@ void actionManetteConnectee() {
     verifieCommandeDriveJoy();      // Le DPad a priorité sur le joystick gauche, donc on s'occupe du DPad après le joystick
     verifieCommandeDriveDPad();     // pour overwrite le joystick si c'est nécessaire.
 
-    verifieCommandeLanceur();
-    verifieCommandeGrabber();
-    verifieCommandeArm();
+    //verifieCommandeLanceur();
+    //verifieCommandeGrabber();
+    //verifieCommandeArm();
 }
 
 // Cette fonction est appelée à chaque itération de la boucle principale tant que la manette n'est pas connectée.

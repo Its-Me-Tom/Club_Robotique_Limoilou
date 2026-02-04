@@ -18,70 +18,62 @@
 
 // Limit switch pins (LS = Limit Switch)
 // elevator
-#define LS_BOTTOM CRC_DIG_1   // Bottom elevaor      (pin 1)
-#define LS_TOP    CRC_DIG_2   // Top elevator        (pin 2)
+#define LS_ELEVATOR_BOTTOM CRC_DIG_1    // Bottom elevator    (pin 22)
+#define LS_ELEVATOR_TOP CRC_DIG_2       // Top elevator       (pin 23)
 // arm pos
-#define LS_TOP    CRC_DIG_2   // Top arm position    (pin 3)
-#define LS_MIDDLE CRC_DIG_3   // Middle arm position (pin 4)
-#define LS_BOTTOM CRC_DIG_1   // Bottom arm position (pin 5)
+#define LS_ARM_TOP CRC_DIG_2            // Top arm position    (pin 23)
+#define LS_ARM_MIDDLE CRC_DIG_3         // Middle arm position (pin 24)
+#define LS_ARM_BOTTOM CRC_DIG_1         // Bottom arm position (pin 22)
 // grabbers
-#define LS_OPEN   CRC_DIG_4   // Grabbers fully open (pin 6)
-
+#define LS_GRABBER_OPEN CRC_DIG_4       // Grabbers fully open (pin 25)
 
 //=================== ELEVATOR STATE MACHINE ==================//
-void (*actionElevateur)() = initElevateur;  // current state
-int8_t elevateurSpeed = 0;                  // motor speed -127 to 127
-bool aimantAligne = false;                  // limit switch status
+void (*actionElevateur)() = initElevateur;
+int8_t elevateurSpeed = 0;
+bool aimantAligne = false;
 
 void initElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(LS_BOTTOM);
+    bool bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);  // true = pressed
     
-    if (aimantAligne) {
+    if (bottomLimit) {
         elevateurSpeed = 0;
-        actionElevateur = bougePasElevateur;
+        actionElevateur = controlElevateur;
     } else {
-        elevateurSpeed = -50;  // go down to find bottom limit
-        actionElevateur = descendElevateur;
+        elevateurSpeed = -50;
+        actionElevateur = controlElevateur;
     }
 }
 
-void bougePasElevateur() {
-    elevateurSpeed = 0;  // motor off
+void controlElevateur() {
+    bool topLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_TOP);        // true = pressed
+    bool bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);  // true = pressed
     
-    if (BTN_ELEVATOR_UP) {
-        actionElevateur = monteElevateur;
-    } else if (BTN_ELEVATOR_DOWN) {
-        actionElevateur = descendElevateur;
+    // Both buttons pressed = hold position
+    if (BTN_ELEVATOR_UP && BTN_ELEVATOR_DOWN) {
+        elevateurSpeed = 5;  // counter gravity
+    }
+    // Up button only - can go up if NOT at top limit
+    else if (BTN_ELEVATOR_UP && !topLimit) {
+        elevateurSpeed = 75;  // go up
+    }
+    // Down button only - can go down if NOT at bottom limit
+    else if (BTN_ELEVATOR_DOWN && !bottomLimit) {
+        elevateurSpeed = -50;  // go down
+    }
+    // Nothing pressed or at limit
+    else {
+        elevateurSpeed = 0;  // motor off
     }
 }
-
-void monteElevateur() {
-    if (!BTN_ELEVATOR_UP) {  // button released
-        elevateurSpeed = 0;
-        actionElevateur = bougePasElevateur;
-    } else {
-        elevateurSpeed = 50;  // move up
-    }
-}
-
-void descendElevateur() {
-    aimantAligne = !CrcLib::GetDigitalInput(LS_BOTTOM);
-    
-    if (aimantAligne) {  // hit bottom limit
-        elevateurSpeed = 0;
-        actionElevateur = bougePasElevateur;
-    } else if (!BTN_ELEVATOR_DOWN) {  // button released
-        elevateurSpeed = 0;
-        actionElevateur = bougePasElevateur;
-    } else {
-        elevateurSpeed = -50;  // move down
-    }
-}
-
 
 //===================== GRABBERS ====================//
 // literrylly open a closes with one or 2 limit switch
 // will be toggled with B button
+extern int8_t grabberSpeed;
+
+void controlGrabber() {
+    // TODO: implement grabber control
+}
 
 
 //===================== ARM ROTATION ====================//
@@ -92,3 +84,8 @@ void descendElevateur() {
 
 // note: for now only 2 limit switches are used (top and bottom)
 // and a magnet sencor thigy for the middle position
+extern int8_t armSpeed;
+
+void controlArm() {
+    // TODO: implement arm control
+}

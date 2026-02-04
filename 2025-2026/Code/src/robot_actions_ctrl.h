@@ -10,9 +10,6 @@
 
 // Forward declarations for elevator state machine functions
 void initElevateur();
-void bougePasElevateur();
-void monteElevateur();
-void descendElevateur();
 
 // Elevator state machine function pointer
 extern void (*actionElevateur)();
@@ -22,8 +19,8 @@ extern int8_t elevateurSpeed;
 extern bool aimantAligne;
 
 // Command functions
-void verifieCommandeLanceur();
-void verifieCommandeGrabber();
-void verifieCommandeArm();
+void controlElevateur();
+void controlGrabber();
+void controlArm();
 
 #endif //ROBOT_2024_ROBOT_ACTIONS_CTRL_H
