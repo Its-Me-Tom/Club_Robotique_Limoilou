@@ -50,6 +50,7 @@ void setup() {
     CrcLib::SetDigitalPinMode(CRC_DIG_2, INPUT);
     CrcLib::SetDigitalPinMode(CRC_DIG_3, INPUT);
     CrcLib::SetDigitalPinMode(CRC_DIG_4, INPUT);
+    CrcLib::SetDigitalPinMode(CRC_DIG_7, INPUT);  // *** ADDED - Grabber closed limit ***
 }
 
 void loop() {
@@ -72,6 +73,7 @@ void loop() {
 // Cette fonction est appelée à chaque itération de la boucle principale tant que la manette est connectée
 void actionManetteConnectee() {
     actionElevateur();
+    actionGrabber();  // *** ADDED ***
 
     driveSpeed.x = 0;
     driveSpeed.y = 0;

@@ -4,6 +4,7 @@
 #include "main.h"
 #include "manette.h"
 #include "robot_actions_ctrl.h"
+#include "grabber_encoder.h"  // *** ONLY ADDED LINE ***
 
 
 //===================== BUTTON MAPPINGS =======================//
@@ -56,7 +57,7 @@ int LastArmState = BOTTOM;
 
 //===================== FUNCTION POINTERS =======================//
 void (*actionElevateur)() = initElevateur;
-//void (*actionGrabber)() = controlGrabber;
+void (*actionGrabber)() = initGrabber;  // *** UNCOMMENTED ***
 void (*actionArm)() = controlArm;
 
 
@@ -93,50 +94,51 @@ void controlElevateur() {
 
 
 //===================== GRABBERS ====================//
+// *** UNCOMMENTED SECTION BELOW ***
 // open/closes with button B, uses one limit switch + encoder
-//void initGrabber() {
-//    closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
-//    
-//    if (!closedLimit) {
-//        // close grabbers until closed limit is reached
-//        grabberSpeed = -50;
-//    } else {
-//        // at closed position - reset encoder
-//        grabberSpeed = 0;
-//        initEncoder();  // Reset encoder to 0 at closed position
-//        actionGrabber = controlGrabber;
-//    }
-//}
-//
-//void controlGrabber() {
-//    closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
-//    encoderPos = readEncoder();  // Get current position
-//    
-//    // Button debouncing
-//    currentBtn = BTN_GRABBER_TOGGLE;
-//    if (currentBtn && !prevGrabberBtn) {
-//        // Toggle state
-//        LastGrabberState = (LastGrabberState == OPEN) ? CLOSED : OPEN;
-//    }
-//    prevGrabberBtn = currentBtn;
-//    
-//    // Control based on state
-//    if (LastGrabberState == CLOSED) {
-//        // Closing
-//        if (!closedLimit) {
-//            grabberSpeed = -50;} 
-//        else {
-//            grabberSpeed = 0;
-//        }
-//    } else {
-//        // Opening
-//        if (encoderPos > GRABBER_FULLY_OPEN_POSITION) {
-//            grabberSpeed = 50;} 
-//        else {
-//            grabberSpeed = 0;
-//        }
-//    }
-//}
+void initGrabber() {
+    closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
+    
+    if (!closedLimit) {
+        // close grabbers until closed limit is reached
+        grabberSpeed = -50;
+    } else {
+        // at closed position - reset encoder
+        grabberSpeed = 0;
+        initEncoder();  // Reset encoder to 0 at closed position
+        actionGrabber = controlGrabber;
+    }
+}
+
+void controlGrabber() {
+    closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
+    encoderPos = readEncoder();  // Get current position
+    
+    // Button debouncing
+    currentBtn = BTN_GRABBER_TOGGLE;
+    if (currentBtn && !prevGrabberBtn) {
+        // Toggle state
+        LastGrabberState = (LastGrabberState == OPEN) ? CLOSED : OPEN;
+    }
+    prevGrabberBtn = currentBtn;
+    
+    // Control based on state
+    if (LastGrabberState == CLOSED) {
+        // Closing
+        if (!closedLimit) {
+            grabberSpeed = -50;} 
+        else {
+            grabberSpeed = 0;
+        }
+    } else {
+        // Opening
+        if (encoderPos > GRABBER_FULLY_OPEN_POSITION) {
+            grabberSpeed = 50;} 
+        else {
+            grabberSpeed = 0;
+        }
+    }
+}
 
 
 //===================== ARM ROTATION ====================//
