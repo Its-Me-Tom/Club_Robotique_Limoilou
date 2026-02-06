@@ -20,7 +20,7 @@ extern bool aimantAligne;
 
 // Command functions
 void controlElevateur();
-void controlGrabber();
+//void controlGrabber();
 void controlArm();
 
 #endif //ROBOT_2024_ROBOT_ACTIONS_CTRL_H

@@ -39,16 +39,14 @@
 int8_t elevateurSpeed = 0;
 bool topLimit = false;
 bool bottomLimit = false;
-// grabbers
+// grabbers - armSpeed and grabberSpeed are defined in main.cpp
 int32_t encoderPos = 0;
-int8_t grabberSpeed;
 bool openLimit = false;
 bool closedLimit = false;
 int LastGrabberState = OPEN;
 bool prevGrabberBtn = false;
 bool currentBtn = false;
 // arm
-int8_t armSpeed = 0;
 bool upwards = false;
 bool halfways = false;
 bool downwards = false;
