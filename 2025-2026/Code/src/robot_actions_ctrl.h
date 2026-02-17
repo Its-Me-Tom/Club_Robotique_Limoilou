@@ -10,19 +10,19 @@
 
 // Forward declarations for elevator state machine functions
 void initElevateur();
-void initGrabber();  // *** ADDED ***
+void initGrabber();
+void initArm();
 
 // Elevator state machine function pointer
 extern void (*actionElevateur)();
-extern void (*actionGrabber)();  // *** ADDED ***
+extern void (*actionGrabber)();
 
 // Elevator variables
 extern int8_t elevateurSpeed;
-extern bool aimantAligne;
 
 // Command functions
 void controlElevateur();
-void controlGrabber();  // *** ADDED ***
+void controlGrabber();
 void controlArm();
 
 #endif //ROBOT_2024_ROBOT_ACTIONS_CTRL_H

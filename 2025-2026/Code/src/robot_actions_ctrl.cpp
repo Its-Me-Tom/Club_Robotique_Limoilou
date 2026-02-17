@@ -4,7 +4,7 @@
 #include "main.h"
 #include "manette.h"
 #include "robot_actions_ctrl.h"
-#include "grabber_encoder.h"  // *** ONLY ADDED LINE ***
+#include "grabber_encoder.h"
 
 
 //===================== BUTTON MAPPINGS =======================//
@@ -57,7 +57,7 @@ int LastArmState = BOTTOM;
 
 //===================== FUNCTION POINTERS =======================//
 void (*actionElevateur)() = initElevateur;
-void (*actionGrabber)() = initGrabber;  // *** UNCOMMENTED ***
+void (*actionGrabber)() = initGrabber;
 void (*actionArm)() = controlArm;
 
 
@@ -118,15 +118,20 @@ void controlGrabber() {
     openLimit   = CrcLib::GetDigitalInput(LS_GRABBER_OPEN);    // read open limit switch
     closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
     //encoderPos = readEncoder();  // Get current position (encoder not used)
+
+    // record timestamp on fresh button press to start closing timer
+    static bool lastBtn = false;
+    if (BTN_GRABBER_TOGGLE && !lastBtn) closing_tmr = millis();
+    lastBtn = BTN_GRABBER_TOGGLE;
    
     if (BTN_GRABBER_TOGGLE || Grabbering) {
         Grabbering = true;
 
         // Closing
-        if (LastGrabberState == OPEN && Grabbering) {  // was CLOSED, now correctly OPEN since we want to close
+        if (LastGrabberState == OPEN && Grabbering) {
             // and the holding function
             if (!closedLimit) {
-                if (millis() - closing_tmr <= CLOSING_TIME) {  // actual ms comparison now
+                if (millis() - closing_tmr <= CLOSING_TIME) {
                     grabberSpeed = -50;
                 } else {
                     grabberSpeed = -5;
@@ -151,10 +156,7 @@ void controlGrabber() {
         }
     }
 
-    // record timestamp on fresh button press to start closing timer
-    static bool lastBtn = false;
-    if (BTN_GRABBER_TOGGLE && !lastBtn) closing_tmr = millis();
-    lastBtn = BTN_GRABBER_TOGGLE;
+
 }   
 
 
