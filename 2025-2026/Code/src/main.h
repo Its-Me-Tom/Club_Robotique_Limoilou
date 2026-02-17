@@ -11,8 +11,6 @@
 #include <CrcRemoteState.h>
 #include <CrcXbee.h>
 
-#define AIMANT_PIN CRC_DIG_1
-
 struct coords {
     int8_t x;
     int8_t y;
