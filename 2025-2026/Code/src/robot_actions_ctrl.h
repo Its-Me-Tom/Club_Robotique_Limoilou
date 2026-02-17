@@ -16,6 +16,7 @@ void initArm();
 // Elevator state machine function pointer
 extern void (*actionElevateur)();
 extern void (*actionGrabber)();
+extern void (*actionArm)();
 
 // Elevator variables
 extern int8_t elevateurSpeed;
