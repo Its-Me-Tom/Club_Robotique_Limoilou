@@ -1,5 +1,6 @@
 //
 // Created by clovis on 25-02-05.
+// non utiliser mais ustile su un moteur a besoin detre encoder
 //
 
 #include "grabber_encoder.h"

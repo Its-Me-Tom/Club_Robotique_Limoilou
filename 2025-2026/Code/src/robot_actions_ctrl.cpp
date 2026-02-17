@@ -28,12 +28,12 @@
 #define HALFWAY 1
 #define BOTTOM 2
 // grabbers
-#define GRABBER_FULLY_OPEN_POSITION (-250)  // Encoder value when fully open
+//#define GRABBER_FULLY_OPEN_POSITION (-250)  // Encoder value when fully open
 #define LS_GRABBER_OPEN CRC_DIG_6       // Grabbers open       (pin 6)
 #define LS_GRABBER_CLOSED CRC_DIG_7     // Grabbers closed     (pin 7)
 #define OPEN 1
 #define CLOSED 0
-
+#define CLOSING_TIME 1200  // ammound of time (in ms) to close befor it start forcing less
 
 //=========================== VARIABLES ========================//
 // elevator
@@ -41,19 +41,19 @@ int8_t elevateurSpeed = 0;
 bool topLimit = false;
 bool bottomLimit = false;
 // grabbers - armSpeed and grabberSpeed are defined in main.cpp
-int32_t encoderPos = 0;
+//int32_t encoderPos = 0; encoder not used
+bool Grabbering = false;
 bool openLimit = false;
 bool closedLimit = false;
 int LastGrabberState = OPEN;
-bool prevGrabberBtn = false;
-bool currentBtn = false;
+uint32_t closing_tmr = 0;  // now stores a millis() timestamp instead of a counter
+
 // arm
 bool upwards = false;
 bool halfways = false;
 bool downwards = false;
 int TargetArmState = BOTTOM;
 int LastArmState = BOTTOM;
-
 
 //===================== FUNCTION POINTERS =======================//
 void (*actionElevateur)() = initElevateur;
@@ -67,7 +67,7 @@ void initElevateur() {
     
     if (!bottomLimit) {
         // move down until bottom limit is reached
-        elevateurSpeed = -50;
+        elevateurSpeed = 50;
     } else {
         elevateurSpeed = 0;
         actionElevateur = controlElevateur;
@@ -79,13 +79,15 @@ void controlElevateur() {
     bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);
 
     if (BTN_ELEVATOR_UP && BTN_ELEVATOR_DOWN) {
-        elevateurSpeed = 5; // slight up to hold position againt gravity
+        elevateurSpeed = -5; // slight up to hold position againt gravity
+        // note we might remove it and also change the move up speed to 50 since the elevater 
+        // MIGHT have a counter weight in the future
     }
     else if (BTN_ELEVATOR_UP && !topLimit) {
-        elevateurSpeed = 75; // move up
+        elevateurSpeed = -75; // move up
     }
     else if (BTN_ELEVATOR_DOWN && !bottomLimit) {
-        elevateurSpeed = -50; // move down
+        elevateurSpeed = 50; // move down
     }
     else {
         elevateurSpeed = 0; // notihn
@@ -94,8 +96,10 @@ void controlElevateur() {
 
 
 //===================== GRABBERS ====================//
-// *** UNCOMMENTED SECTION BELOW ***
-// open/closes with button B, uses one limit switch + encoder
+// open/closes with button B, uses 2 limit swtich
+// idea: when toggle mode is switched to close, close it but the keep the motor engave at alow speed 
+// unless closed limit switche is pressed (cause it need to make sure its holding the barrels)
+// this is to prevent the motors from bruning and forcing too much
 void initGrabber() {
     closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
     
@@ -104,41 +108,54 @@ void initGrabber() {
         grabberSpeed = -50;
     } else {
         // at closed position - reset encoder
+        LastGrabberState = CLOSED;
         grabberSpeed = 0;
-        initEncoder();  // Reset encoder to 0 at closed position
         actionGrabber = controlGrabber;
     }
 }
 
 void controlGrabber() {
+    openLimit   = CrcLib::GetDigitalInput(LS_GRABBER_OPEN);    // read open limit switch
     closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
-    encoderPos = readEncoder();  // Get current position
-    
-    // Button debouncing
-    currentBtn = BTN_GRABBER_TOGGLE;
-    if (currentBtn && !prevGrabberBtn) {
-        // Toggle state
-        LastGrabberState = (LastGrabberState == OPEN) ? CLOSED : OPEN;
-    }
-    prevGrabberBtn = currentBtn;
-    
-    // Control based on state
-    if (LastGrabberState == CLOSED) {
+    //encoderPos = readEncoder();  // Get current position (encoder not used)
+   
+    if (BTN_GRABBER_TOGGLE || Grabbering) {
+        Grabbering = true;
+
         // Closing
-        if (!closedLimit) {
-            grabberSpeed = -50;} 
-        else {
-            grabberSpeed = 0;
-        }
-    } else {
+        if (LastGrabberState == OPEN && Grabbering) {  // was CLOSED, now correctly OPEN since we want to close
+            // and the holding function
+            if (!closedLimit) {
+                if (millis() - closing_tmr <= CLOSING_TIME) {  // actual ms comparison now
+                    grabberSpeed = -50;
+                } else {
+                    grabberSpeed = -5;
+                }
+            } else {
+                Grabbering = false;
+                grabberSpeed = 0;
+                LastGrabberState = CLOSED;
+                closing_tmr = 0;
+            }
+        } 
         // Opening
-        if (encoderPos > GRABBER_FULLY_OPEN_POSITION) {
-            grabberSpeed = 50;} 
-        else {
-            grabberSpeed = 0;
+        else if (Grabbering) {
+            if (!openLimit) {
+                grabberSpeed = 50;
+            } 
+            else {
+                Grabbering = false;
+                grabberSpeed = 0;
+                LastGrabberState = OPEN;
+            }
         }
     }
-}
+
+    // record timestamp on fresh button press to start closing timer
+    static bool lastBtn = false;
+    if (BTN_GRABBER_TOGGLE && !lastBtn) closing_tmr = millis();
+    lastBtn = BTN_GRABBER_TOGGLE;
+}   
 
 
 //===================== ARM ROTATION ====================//
