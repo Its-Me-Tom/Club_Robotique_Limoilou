@@ -18,5 +18,7 @@ struct coords {
 
 extern coords driveSpeed;
 extern int8_t lanceurSpeed;
+extern int8_t grabberSpeed;
+extern int8_t armSpeed;
 
 #endif //ROBOT2024_MAIN_H

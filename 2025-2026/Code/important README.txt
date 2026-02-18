@@ -1,3 +1,8 @@
+À faire:
+- when in non rocket league mode dont invert left and right when going backwards
+- 
+
+
 Drive
 Drive (lentement)
 Petit multiplicateur
