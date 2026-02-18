@@ -9,8 +9,8 @@
 
 //===================== BUTTON MAPPINGS =======================//
 // controller button mappings
-#define BTN_ELEVATOR_UP manette.l1      // L1 bumper - move elevator up
-#define BTN_ELEVATOR_DOWN manette.r1    // R1 bumper - move elevator down
+#define BTN_ELEVATOR_UP manette.r1      // L1 bumper - move elevator up
+#define BTN_ELEVATOR_DOWN manette.l1    // R1 bumper - move elevator down
 #define BTN_GRABBER_TOGGLE manette.b    // B button - toggle grabbers open/close
 #define BTN_ARM_TOP manette.y           // Y button - arm to top position
 #define BTN_ARM_MIDDLE manette.x        // X button - arm to middle position
@@ -21,9 +21,9 @@
 #define LS_ELEVATOR_BOTTOM CRC_DIG_1    // Bottom elevator     (pin 1)
 #define LS_ELEVATOR_TOP CRC_DIG_2       // Top elevator        (pin 2)
 // arm pos
-#define LS_ARM_TOP CRC_DIG_3            // Top arm position    (pin 3)
-#define LS_ARM_MIDDLE CRC_DIG_4         // Middle arm position (pin 4)
-#define LS_ARM_BOTTOM CRC_DIG_5         // Bottom arm position (pin 5)
+#define LS_ARM_TOP CRC_DIG_10            // Top arm position    (pin 3)
+#define LS_ARM_MIDDLE CRC_DIG_11        // Middle arm position (pin 4)
+#define LS_ARM_BOTTOM CRC_DIG_12         // Bottom arm position (pin 5)
 #define TOP 0
 #define HALFWAY 1
 #define BOTTOM 2
@@ -33,7 +33,7 @@
 #define LS_GRABBER_CLOSED CRC_DIG_7     // Grabbers closed     (pin 7)
 #define OPEN 1
 #define CLOSED 0
-#define CLOSING_TIME 1200  // ammound of time (in ms) to close befor it start forcing less
+#define CLOSING_TIME 1500  // ammound of time (in ms) to close befor it start forcing less
 
 //=========================== VARIABLES ========================//
 // elevator
@@ -65,11 +65,11 @@ void (*actionArm)() = controlArm;
 
 //======================== ELEVATOR CTRL =======================//
 void initElevateur() {
-    bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);
+    topLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_TOP);
     
-    if (!bottomLimit) {
-        // move down until bottom limit is reached
-        elevateurSpeed = 50;
+    if (!topLimit) {
+        // move down until top limit is reached
+        elevateurSpeed = -50;
     } else {
         elevateurSpeed = 0;
         actionElevateur = controlElevateur;
@@ -80,19 +80,19 @@ void controlElevateur() {
     topLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_TOP);
     bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);
 
-    if (BTN_ELEVATOR_UP && BTN_ELEVATOR_DOWN) {
-        elevateurSpeed = -5; // slight up to hold position againt gravity
-        // note we might remove it and also change the move up speed to 50 since the elevater 
-        // MIGHT have a counter weight in the future
-    }
-    else if (BTN_ELEVATOR_UP && !topLimit) {
+//    if (BTN_ELEVATOR_UP && BTN_ELEVATOR_DOWN) {
+//        elevateurSpeed = -10; // slight up to hold position againt gravity
+//        // note we might remove it and also change the move up speed to 50 since the elevater 
+//        // MIGHT have a counter weight in the future
+//    }
+    /*else */if (BTN_ELEVATOR_UP && !topLimit) {
         elevateurSpeed = -75; // move up
     }
     else if (BTN_ELEVATOR_DOWN && !bottomLimit) {
         elevateurSpeed = 50; // move down
     }
     else {
-        elevateurSpeed = 0; // notihn
+        elevateurSpeed = -10; // notihn
     }
 }
 
@@ -138,9 +138,9 @@ void controlGrabber() {
             // and the holding function
             if (!closedLimit) {
                 if (millis() - closing_tmr <= CLOSING_TIME) {
-                    grabberSpeed = -50;
+                    grabberSpeed = -75;
                 } else {
-                    grabberSpeed = -5;
+                    grabberSpeed = -10;
                 }
             } else {
                 Grabbering = false;
@@ -151,7 +151,7 @@ void controlGrabber() {
         // Opening
         else {
             if (!openLimit) {
-                grabberSpeed = 50;
+                grabberSpeed = 75;
             } 
             else {
                 Grabbering = false;
