@@ -1,11 +1,18 @@
-# Created by https://www.toptal.com/developers/gitignore/api/platformio
-# Edit at https://www.toptal.com/developers/gitignore?templates=platformio
-
-### PlatformIO ###
-.pioenvs
-.piolibdeps
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.vscode/
 .clang_complete
 .gcc-flags.json
-.pio
+*.o
+*.d
+*.elf
+*.bin
+*.hex
 
-# End of https://www.toptal.com/developers/gitignore/api/platformio
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
