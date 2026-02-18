@@ -9,8 +9,8 @@
 
 //===================== BUTTON MAPPINGS =======================//
 // controller button mappings
-#define BTN_ELEVATOR_UP manette.l1      // L1 bumper - move elevator up
-#define BTN_ELEVATOR_DOWN manette.r1    // R1 bumper - move elevator down
+#define BTN_ELEVATOR_UP manette.r1      // R1 bumper - move elevator up
+#define BTN_ELEVATOR_DOWN manette.l1    // L1 bumper - move elevator down
 #define BTN_GRABBER_TOGGLE manette.b    // B button - toggle grabbers open/close
 #define BTN_ARM_TOP manette.y           // Y button - arm to top position
 #define BTN_ARM_MIDDLE manette.x        // X button - arm to middle position
@@ -18,19 +18,19 @@
 
 // Limit switch pins (LS = Limit Switch)
 // elevator
-#define LS_ELEVATOR_BOTTOM CRC_DIG_1    // Bottom elevator     (pin 1)
-#define LS_ELEVATOR_TOP CRC_DIG_2       // Top elevator        (pin 2)
+#define LS_ELEVATOR_BOTTOM CRC_DIG_1    // Bottom elevator     
+#define LS_ELEVATOR_TOP CRC_DIG_2       // Top elevator        
 // arm pos
-#define LS_ARM_TOP CRC_DIG_3            // Top arm position    (pin 3)
-#define LS_ARM_MIDDLE CRC_DIG_4         // Middle arm position (pin 4)
-#define LS_ARM_BOTTOM CRC_DIG_5         // Bottom arm position (pin 5)
+#define LS_ARM_TOP CRC_DIG_10            // Top arm position    
+#define LS_ARM_MIDDLE CRC_DIG_11         // Middle arm position 
+#define LS_ARM_BOTTOM CRC_DIG_12         // Bottom arm position 
 #define TOP 0
 #define HALFWAY 1
 #define BOTTOM 2
 // grabbers
 //#define GRABBER_FULLY_OPEN_POSITION (-250)  // Encoder value when fully open
-#define LS_GRABBER_OPEN CRC_DIG_6       // Grabbers open       (pin 6)
-#define LS_GRABBER_CLOSED CRC_DIG_7     // Grabbers closed     (pin 7)
+#define LS_GRABBER_OPEN CRC_DIG_6       // Grabbers open       
+#define LS_GRABBER_CLOSED CRC_DIG_7     // Grabbers closed     
 #define OPEN 1
 #define CLOSED 0
 #define CLOSING_TIME 1200  // ammound of time (in ms) to close befor it start forcing less
@@ -65,11 +65,11 @@ void (*actionArm)() = controlArm;
 
 //======================== ELEVATOR CTRL =======================//
 void initElevateur() {
-    bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);
+    topLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_TOP);
     
-    if (!bottomLimit) {
-        // move down until bottom limit is reached
-        elevateurSpeed = 50;
+    if (!topLimit) {
+        // move up until top limit is reached
+        elevateurSpeed = -75;
     } else {
         elevateurSpeed = 0;
         actionElevateur = controlElevateur;
@@ -79,20 +79,20 @@ void initElevateur() {
 void controlElevateur() {
     topLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_TOP);
     bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);
-
+/*
     if (BTN_ELEVATOR_UP && BTN_ELEVATOR_DOWN) {
         elevateurSpeed = -5; // slight up to hold position againt gravity
         // note we might remove it and also change the move up speed to 50 since the elevater 
         // MIGHT have a counter weight in the future
-    }
-    else if (BTN_ELEVATOR_UP && !topLimit) {
+    }*/
+    /*else*/ if (BTN_ELEVATOR_UP && !topLimit) {
         elevateurSpeed = -75; // move up
     }
     else if (BTN_ELEVATOR_DOWN && !bottomLimit) {
-        elevateurSpeed = 50; // move down
+        elevateurSpeed = 75; // move down
     }
     else {
-        elevateurSpeed = 0; // notihn
+        elevateurSpeed = -10; // notihn
     }
 }
 
@@ -187,6 +187,7 @@ void controlArm() {
     downwards = CrcLib::GetDigitalInput(LS_ARM_BOTTOM);
     
     // check for button presses to set target arm state
+    // if all buttons are pressed, do nothing (or you could set a default state)
     if (BTN_ARM_TOP) {
         TargetArmState = TOP;
     }
@@ -196,6 +197,10 @@ void controlArm() {
     else if (BTN_ARM_BOTTOM) {
         TargetArmState = BOTTOM;
     }
+    // remove once at competition
+    else {
+        TargetArmState = -1;
+    } 
     
     // determine current arm port and move accordingly
     armSpeed = 0;
@@ -221,5 +226,6 @@ void controlArm() {
             else {
                 LastArmState = BOTTOM;}
         break;
+        //default: armSpeed = 0; break; // commenter à la compétition
     }
 }
