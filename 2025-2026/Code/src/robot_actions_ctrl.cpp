@@ -89,7 +89,7 @@ void controlElevateur() {
         elevateurSpeed = -75; // move up
     }
     else if (BTN_ELEVATOR_DOWN && !bottomLimit) {
-        elevateurSpeed = 75; // move down
+        elevateurSpeed = 50; // move down
     }
     else {
         elevateurSpeed = -10; // notihn
@@ -138,7 +138,7 @@ void controlGrabber() {
             // and the holding function
             if (!closedLimit) {
                 if (millis() - closing_tmr <= CLOSING_TIME) {
-                    grabberSpeed = -50;
+                    grabberSpeed = -75;
                 } else {
                     grabberSpeed = -5;
                 }
@@ -151,7 +151,7 @@ void controlGrabber() {
         // Opening
         else {
             if (!openLimit) {
-                grabberSpeed = 50;
+                grabberSpeed = 75;
             } 
             else {
                 Grabbering = false;
@@ -192,40 +192,46 @@ void controlArm() {
         TargetArmState = TOP;
     }
     else if (BTN_ARM_MIDDLE) {
+        armSpeed = 75;
         TargetArmState = HALFWAY;
     }
     else if (BTN_ARM_BOTTOM) {
+        armSpeed = -100;
         TargetArmState = BOTTOM;
     }
-    // remove once at competition
-    else {
-        TargetArmState = -1;
-    } 
-    
+
     // determine current arm port and move accordingly
     armSpeed = 0;
     switch (TargetArmState) {
         // move to top position
         case TOP:
             if (!upwards) {
-                armSpeed = 50;}
-            else {
+                armSpeed = (LastArmState == TOP) ? -75 : 75;
+            }
+            else {  
                 LastArmState = TOP;}
         break;
+
         // move to middle position
         case HALFWAY:
-            if (!halfways) {
-                armSpeed = (LastArmState == TOP) ? -50 : 50;}
-            else {
-                LastArmState = HALFWAY;}
+            if (halfways) {
+                LastArmState = HALFWAY;
+                armSpeed = 0;
+            } 
+            // damps the turning if its going down
+            else if (upwards) { 
+                armSpeed = -5;
+            }
         break;
+        
         // move to bottom position
         case BOTTOM:
-            if (!downwards) {
-                armSpeed = -50;}
-            else {
-                LastArmState = BOTTOM;}
+            if (downwards) {
+                LastArmState = BOTTOM;
+             }
+            else if (upwards) {
+                armSpeed = 5;
+            }
         break;
-        //default: armSpeed = 0; break; // commenter à la compétition
     }
 }
