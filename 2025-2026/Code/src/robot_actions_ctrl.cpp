@@ -56,6 +56,7 @@ bool halfways = false;
 bool downwards = false;
 int TargetArmState = BOTTOM;
 int LastArmState = BOTTOM;
+uint32_t arm_damp_tmr = 0;  // timestamp of when arm arrived at a position
 
 //===================== FUNCTION POINTERS =======================//
 void (*actionElevateur)() = initElevateur;
@@ -79,13 +80,9 @@ void initElevateur() {
 void controlElevateur() {
     topLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_TOP);
     bottomLimit = CrcLib::GetDigitalInput(LS_ELEVATOR_BOTTOM);
-/*
-    if (BTN_ELEVATOR_UP && BTN_ELEVATOR_DOWN) {
-        elevateurSpeed = -5; // slight up to hold position againt gravity
-        // note we might remove it and also change the move up speed to 50 since the elevater 
-        // MIGHT have a counter weight in the future
-    }*/
-    /*else*/ if (BTN_ELEVATOR_UP && !topLimit) {
+    
+    // Elevator control logic
+    if (BTN_ELEVATOR_UP && !topLimit) {
         elevateurSpeed = -75; // move up
     }
     else if (BTN_ELEVATOR_DOWN && !bottomLimit) {
@@ -119,7 +116,6 @@ void initGrabber() {
 void controlGrabber() {
     openLimit   = CrcLib::GetDigitalInput(LS_GRABBER_OPEN);
     closedLimit = CrcLib::GetDigitalInput(LS_GRABBER_CLOSED);
-    //encoderPos = readEncoder();  // Get current position (encoder not used)
 
     // Button debouncing
     currentBtn = BTN_GRABBER_TOGGLE;
@@ -132,7 +128,6 @@ void controlGrabber() {
     prevGrabberBtn = currentBtn;
 
     if (Grabbering) {
-
         // Closing
         if (LastGrabberState == CLOSED) {
             // and the holding function
@@ -169,6 +164,7 @@ void controlGrabber() {
 // Y for the arm to go to the top position
 // X for the arm to go to the middle position
 // A for the arm to go to the bottom position
+// physical rotation order (positive = forward): BOTTOM(0deg) -> TOP(180deg) -> HALFWAY(270deg)
 
 void initArm() {
     downwards = CrcLib::GetDigitalInput(LS_ARM_BOTTOM);
@@ -192,45 +188,70 @@ void controlArm() {
         TargetArmState = TOP;
     }
     else if (BTN_ARM_MIDDLE) {
-        armSpeed = 75;
         TargetArmState = HALFWAY;
     }
     else if (BTN_ARM_BOTTOM) {
-        armSpeed = -100;
         TargetArmState = BOTTOM;
     }
+
+
+    // always update LastArmState when any limit switch is hit, regardless of target
+    // this catches mid-travel hits and keeps state consistent
+    // arm passed top, start 500ms countdown for dampers
+    if (upwards && LastArmState != TOP) { 
+        LastArmState = TOP; 
+        arm_damp_tmr = millis();
+    }  
+    // arm reached halway
+    if (halfways && LastArmState != HALFWAY) { 
+        LastArmState = HALFWAY; 
+    }
+    // arm reached bottom
+    if (downwards && LastArmState != BOTTOM) { 
+        LastArmState = BOTTOM; 
+    }
+
 
     // determine current arm port and move accordingly
     armSpeed = 0;
     switch (TargetArmState) {
-        // move to top position
+        // move to top position (no damping)
         case TOP:
+            if (LastArmState == TOP) { break; }
             if (!upwards) {
                 armSpeed = (LastArmState == TOP) ? -75 : 75;
             }
-            else {  
-                LastArmState = TOP;}
         break;
 
-        // move to middle position
+        // move to middle position (270deg)
+        // full speed until TOP switch hit, keep full speed for 500ms, then damp at 15 until HALFWAY reached
         case HALFWAY:
+            if (LastArmState == HALFWAY) { break; }
             if (halfways) {
-                LastArmState = HALFWAY;
                 armSpeed = 0;
-            } 
-            // damps the turning if its going down
-            else if (upwards) { 
-                armSpeed = -5;
+            }
+            // activates the dampers once top has been reache and 500ms passed
+            else if (LastArmState == TOP && millis() - arm_damp_tmr > 750) {
+                armSpeed = -10;                                          
+            }
+            else {
+                armSpeed = 100;  // still traveling at full speed
             }
         break;
         
-        // move to bottom position
+        // move to bottom position (0deg)
+        // full speed until TOP switch hit, keep full speed for 500ms, then damp at -15 until BOTTOM reached
         case BOTTOM:
+            if (LastArmState == BOTTOM) { break; }
             if (downwards) {
-                LastArmState = BOTTOM;
-             }
-            else if (upwards) {
-                armSpeed = 5;
+                armSpeed = 0;
+            }
+            // activates the dampers once top has been reache and 500ms passed
+            else if (LastArmState == TOP && millis() - arm_damp_tmr > 750) {
+                armSpeed = 10; 
+            }
+            else {
+                armSpeed = -100;  // still traveling at full speed
             }
         break;
     }
