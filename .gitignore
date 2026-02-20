@@ -2,17 +2,17 @@
 .pio/
 .pioenvs/
 .piolibdeps/
-
-# VSCode
 .vscode/
-
-# Build files
+.clang_complete
+.gcc-flags.json
 *.o
 *.d
 *.elf
 *.bin
 *.hex
 
-# OS files
+# macOS
 .DS_Store
+
+# Windows
 Thumbs.db
