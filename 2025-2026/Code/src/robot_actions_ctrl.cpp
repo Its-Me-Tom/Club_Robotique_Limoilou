@@ -28,12 +28,12 @@
 #define HALFWAY 1
 #define BOTTOM 2
 // grabbers
-//#define GRABBER_FULLY_OPEN_POSITION (-250)  // Encoder value when fully open
 #define LS_GRABBER_OPEN CRC_DIG_6       // Grabbers open       
 #define LS_GRABBER_CLOSED CRC_DIG_7     // Grabbers closed     
 #define OPEN 1
 #define CLOSED 0
 #define CLOSING_TIME 1200  // ammound of time (in ms) to close befor it start forcing less
+
 
 //=========================== VARIABLES ========================//
 // elevator
@@ -41,7 +41,6 @@ int8_t elevateurSpeed = 0;
 bool topLimit = false;
 bool bottomLimit = false;
 // grabbers - armSpeed and grabberSpeed are defined in main.cpp
-//int32_t encoderPos = 0; encoder not used
 bool Grabbering = false;
 bool openLimit = false;
 bool closedLimit = false;
@@ -57,6 +56,8 @@ bool downwards = false;
 int TargetArmState = BOTTOM;
 int LastArmState = BOTTOM;
 uint32_t arm_damp_tmr = 0;  // timestamp of when arm arrived at a position
+bool armArrived = false;     // true once target switch has been hit, enables dampers
+
 
 //===================== FUNCTION POINTERS =======================//
 void (*actionElevateur)() = initElevateur;
@@ -170,7 +171,7 @@ void initArm() {
     downwards = CrcLib::GetDigitalInput(LS_ARM_BOTTOM);
     if (!downwards) {
         // move down until bottom limit is reached
-        armSpeed = -50;
+        armSpeed = 50;
     } else {
         armSpeed = 0;
         actionArm = controlArm;
@@ -185,12 +186,15 @@ void controlArm() {
     // check for button presses to set target arm state
     // if all buttons are pressed, do nothing (or you could set a default state)
     if (BTN_ARM_TOP) {
+        if (TargetArmState != TOP) { armArrived = false; }
         TargetArmState = TOP;
     }
     else if (BTN_ARM_MIDDLE) {
+        if (TargetArmState != HALFWAY) { armArrived = false; }
         TargetArmState = HALFWAY;
     }
     else if (BTN_ARM_BOTTOM) {
+        if (TargetArmState != BOTTOM) { armArrived = false; }
         TargetArmState = BOTTOM;
     }
 
@@ -204,11 +208,13 @@ void controlArm() {
     }  
     // arm reached halway
     if (halfways && LastArmState != HALFWAY) { 
-        LastArmState = HALFWAY; 
+        LastArmState = HALFWAY;
+        armArrived = true;
     }
     // arm reached bottom
     if (downwards && LastArmState != BOTTOM) { 
-        LastArmState = BOTTOM; 
+        LastArmState = BOTTOM;
+        armArrived = true;
     }
 
 
@@ -230,12 +236,12 @@ void controlArm() {
             if (halfways) {
                 armSpeed = 0;
             }
-            // activates the dampers once top has been reache and 500ms passed
-            else if (LastArmState == TOP && millis() - arm_damp_tmr > 750) {
-                armSpeed = -10;                                          
+            // activates the dampers once target was reached, bounced back through TOP, and 750ms passed
+            else if (armArrived && LastArmState == TOP && millis() - arm_damp_tmr > 150) {
+                armSpeed = 10;                                          
             }
             else {
-                armSpeed = 100;  // still traveling at full speed
+                armSpeed = -100;  // still traveling at full speed
             }
         break;
         
@@ -246,12 +252,12 @@ void controlArm() {
             if (downwards) {
                 armSpeed = 0;
             }
-            // activates the dampers once top has been reache and 500ms passed
-            else if (LastArmState == TOP && millis() - arm_damp_tmr > 750) {
-                armSpeed = 10; 
+            // activates the dampers once target was reached, bounced back through TOP, and 750ms passed
+            else if (armArrived && LastArmState == TOP && millis() - arm_damp_tmr > 150) {
+                armSpeed = -10; 
             }
             else {
-                armSpeed = -100;  // still traveling at full speed
+                armSpeed = 100;  // still traveling at full speed
             }
         break;
     }
